@@ -55,6 +55,80 @@
       "records_added": 0,
       "records_updated": 45,
       "last_page": 3
+    },
+    {
+      "id": 7,
+      "started_at": "2025-12-18T05:51:47.252736",
+      "status": "running"
+    },
+    {
+      "id": 8,
+      "started_at": "2025-12-18T05:55:32.913134",
+      "status": "no_updates",
+      "completed_at": "2025-12-18T05:55:46.537243",
+      "records_found": 0,
+      "records_added": 0,
+      "records_updated": 0,
+      "last_page": 0
+    },
+    {
+      "id": 9,
+      "started_at": "2025-12-18T05:57:09.212781",
+      "status": "no_updates",
+      "completed_at": "2025-12-18T05:57:23.913156",
+      "records_found": 0,
+      "records_added": 0,
+      "records_updated": 0,
+      "last_page": 0
+    },
+    {
+      "id": 10,
+      "started_at": "2025-12-18T05:58:06.578755",
+      "status": "no_updates",
+      "completed_at": "2025-12-18T05:58:23.229584",
+      "records_found": 0,
+      "records_added": 0,
+      "records_updated": 0,
+      "last_page": 0
+    },
+    {
+      "id": 11,
+      "started_at": "2025-12-18T05:59:03.527757",
+      "status": "no_updates",
+      "completed_at": "2025-12-18T05:59:14.154069",
+      "records_found": 0,
+      "records_added": 0,
+      "records_updated": 0,
+      "last_page": 0
+    },
+    {
+      "id": 12,
+      "started_at": "2025-12-18T05:59:54.441977",
+      "status": "no_updates",
+      "completed_at": "2025-12-18T06:00:05.366963",
+      "records_found": 0,
+      "records_added": 0,
+      "records_updated": 0,
+      "last_page": 0
+    },
+    {
+      "id": 13,
+      "started_at": "2025-12-18T06:02:29.915946",
+      "status": "no_updates",
+      "completed_at": "2025-12-18T06:02:38.304245",
+      "records_found": 0,
+      "records_added": 0,
+      "records_updated": 0,
+      "last_page": 0
+    },
+    {
+      "id": 14,
+      "started_at": "2025-12-18T06:04:00.822633",
+      "status": "running",
+      "records_found": 75,
+      "records_added": 0,
+      "records_updated": 75,
+      "last_page": 5
     }
   ]
 }

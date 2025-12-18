@@ -120,31 +120,26 @@ async def extract_table_data(page):
 
 
 async def get_last_page_info(page):
-    """Navigate to last page by clicking ... button and get total pages and records."""
+    """Get total pages and records by reading the Last page link."""
     print("Finding last page...")
-    # Keep clicking ... until we reach the last pagination section
-    while True:
-        clicked = await page.evaluate("""
-            () => {
-                const links = document.querySelectorAll('a');
-                for (const link of links) {
-                    if (link.textContent.trim() === '...') {
-                        link.click();
-                        return true;
-                    }
-                }
-                return false;
-            }
-        """)
-        if not clicked:
-            break
-        await page.wait_for_load_state("networkidle")
-        await asyncio.sleep(0.5)  # Fast clicking
     
-    # Get the last page number from pagination
+    # Extract last page number from the "Last page" link
     last_page = await page.evaluate("""
         () => {
+            // Look for a link with title="Last page" or containing the last page number
             const links = document.querySelectorAll('a');
+            for (const link of links) {
+                const title = link.getAttribute('title') || '';
+                if (title.toLowerCase().includes('last page')) {
+                    // Extract number from onclick or href
+                    const onclick = link.getAttribute('onclick') || '';
+                    const match = onclick.match(/['"](\d+)['"]\)/);
+                    if (match) {
+                        return parseInt(match[1]);
+                    }
+                }
+            }
+            // Fallback: find highest number in pagination
             let maxPage = 1;
             for (const link of links) {
                 const num = parseInt(link.textContent.trim());
@@ -156,32 +151,14 @@ async def get_last_page_info(page):
         }
     """)
     
-    # Get total records from the last page
-    await page.evaluate("""
-        () => {
-            const links = document.querySelectorAll('a');
-            let maxPage = 1;
-            let maxLink = null;
-            for (const link of links) {
-                const num = parseInt(link.textContent.trim());
-                if (!isNaN(num) && num > maxPage) {
-                    maxPage = num;
-                    maxLink = link;
-                }
-            }
-            if (maxLink) maxLink.click();
-        }
-    """)
-    await page.wait_for_load_state("networkidle")
-    await asyncio.sleep(2)
-    
-    # Count records on last page
-    table_data = await extract_table_data(page)
-    last_page_records = len(table_data)
+    print(f"  Last page: {last_page}")
     
     # Calculate total records: (last_page - 1) * 15 + last_page_records
-    total_records = (last_page - 1) * 15 + last_page_records
+    # For a rough estimate, assume full pages
+    total_records = last_page * 15
     
+    # To get exact count, we'd need to visit last page, but estimate is enough
+    # for deciding if we need to scrape
     return last_page, total_records
 
 
@@ -412,46 +389,9 @@ async def scrape_all(fresh=False, resume=False):
             session_id = start_scrape_session()
     
     async with async_playwright() as p:
-        # First, check the last page to see if we need to scrape
-        if not fresh and start_page == 1 and our_count > 0:
-            browser, context = await create_stealth_context(p)
-            try:
-                page = await context.new_page()
-                url = f"{BASE_URL}?type={APPARATUS_TYPE}"
-                print(f"Checking for updates at {url}...")
-                await page.goto(url, wait_until="networkidle", timeout=60000)
-                await asyncio.sleep(2)
-                
-                # Click Search button
-                await page.evaluate("""
-                    () => {
-                        const btn = document.querySelector("input[value='Search']");
-                        if (btn) btn.click();
-                    }
-                """)
-                await page.wait_for_load_state("networkidle")
-                await asyncio.sleep(2)
-                
-                # Get last page info
-                last_page, website_total = await get_last_page_info(page)
-                print(f"Website has {website_total} records across {last_page} pages")
-                print(f"We have {our_count} records")
-                
-                if website_total <= our_count:
-                    print("No new records to scrape!")
-                    complete_scrape_session(session_id, 0, 0, 0, 0, "no_updates")
-                    await context.close()
-                    await browser.close()
-                    return
-                
-                # Calculate where new records start
-                new_records = website_total - our_count
-                start_page = max(1, last_page - (new_records // 15) - 5)  # Start a bit earlier to be safe
-                print(f"Found {new_records} new records, starting from page {start_page}")
-                
-            finally:
-                await context.close()
-                await browser.close()
+        # Note: Smart page detection disabled - the Last page link detection
+        # doesn't work due to ASP.NET postback timing issues.
+        # The scraper will run full incremental updates instead.
         
         current_page = start_page
         status = "running"
