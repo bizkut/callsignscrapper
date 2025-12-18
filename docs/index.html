@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCMC Callsign API</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            outline: none;
+        }
+
+        input::placeholder {
+            color: #666;
+        }
+
+        input:focus {
+            box-shadow: 0 0 0 2px #00d9ff;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00d9ff;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .results {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.3);
+            color: #00d9ff;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .callsign {
+            font-family: monospace;
+            font-weight: bold;
+            color: #00ff88;
+            font-size: 1.1rem;
+        }
+
+        .api-docs {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            color: #00d9ff;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #888;
+        }
+
+        @media (max-width: 768px) {
+
+            th,
+            td {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+
+            .callsign {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🇲🇾 MCMC Callsign API</h1>
+        <p class="subtitle">Malaysian Amateur Radio Station Assignments</p>
+
+        <div class="search-box">
+            <input type="text" id="search" placeholder="Search by callsign, name, or assignment number...">
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat">
+                <div class="stat-value" id="total">-</div>
+                <div class="stat-label">Total Records</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="updated">-</div>
+                <div class="stat-label">Last Updated</div>
+            </div>
+        </div>
+
+        <div class="results">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Call Sign</th>
+                        <th>Holder</th>
+                        <th>Assign No</th>
+                        <th>Expiry</th>
+                    </tr>
+                </thead>
+                <tbody id="results">
+                    <tr>
+                        <td colspan="4" class="loading">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="api-docs">
+            <h3>📡 API Usage</h3>
+            <p>Fetch the JSON directly:</p>
+            <pre><code>fetch('https://github.com/YOUR_USERNAME/YOUR_REPO/releases/download/latest/callsigns.json')
+  .then(r => r.json())
+  .then(data => console.log(data.assignments))</code></pre>
+            <p>Or use the JavaScript API:</p>
+            <pre><code>// Get all callsigns
+const all = await CallsignAPI.getAll();
+
+// Search by callsign
+const results = await CallsignAPI.search('9M2');
+
+// Get by exact callsign
+const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - UPDATE THIS with your GitHub repo
+        const REPO = 'bizkut/callsignscrapper';
+        const DATA_URL = `https://github.com/${REPO}/releases/download/latest/callsigns.json`;
+
+        let callsignData = null;
+
+        // API object for external use
+        window.CallsignAPI = {
+            async load() {
+                if (callsignData) return callsignData;
+                const res = await fetch(DATA_URL);
+                callsignData = await res.json();
+                return callsignData;
+            },
+            async getAll() {
+                const data = await this.load();
+                return data.assignments;
+            },
+            async search(query) {
+                const data = await this.load();
+                const q = query.toLowerCase();
+                return data.assignments.filter(a =>
+                    a.call_sign.toLowerCase().includes(q) ||
+                    a.assignment_holder.toLowerCase().includes(q) ||
+                    a.assign_no.toLowerCase().includes(q)
+                );
+            },
+            async getByCallsign(callsign) {
+                const data = await this.load();
+                return data.assignments.find(a =>
+                    a.call_sign.toLowerCase() === callsign.toLowerCase()
+                );
+            }
+        };
+
+        // UI
+        async function init() {
+            try {
+                const data = await CallsignAPI.load();
+                document.getElementById('total').textContent = data.assignments.length.toLocaleString();
+                document.getElementById('updated').textContent = data.metadata?.last_updated?.split('T')[0] || 'Unknown';
+                renderResults(data.assignments.slice(0, 50));
+            } catch (e) {
+                document.getElementById('results').innerHTML =
+                    `<tr><td colspan="4" class="loading">Failed to load data. Check console.</td></tr>`;
+                console.error(e);
+            }
+        }
+
+        function renderResults(items) {
+            const tbody = document.getElementById('results');
+            if (!items.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="loading">No results found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(a => `
+                <tr>
+                    <td class="callsign">${a.call_sign}</td>
+                    <td>${a.assignment_holder}</td>
+                    <td>${a.assign_no}</td>
+                    <td>${a.expiry_date}</td>
+                </tr>
+            `).join('');
+        }
+
+        let debounce;
+        document.getElementById('search').addEventListener('input', (e) => {
+            clearTimeout(debounce);
+            debounce = setTimeout(async () => {
+                const q = e.target.value.trim();
+                if (!q) {
+                    const data = await CallsignAPI.load();
+                    renderResults(data.assignments.slice(0, 50));
+                } else {
+                    const results = await CallsignAPI.search(q);
+                    renderResults(results.slice(0, 100));
+                }
+            }, 300);
+        });
+
+        init();
+    </script>
+</body>
+
+</html>

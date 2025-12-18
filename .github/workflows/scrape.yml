@@ -1,0 +1,60 @@
+name: Weekly MCMC Scrape
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Every Sunday at 2 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Download previous data
+        continue-on-error: true
+        run: |
+          mkdir -p data
+          gh release download latest --pattern "callsigns.json" --dir data || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run scraper
+        run: python scraper.py
+
+      - name: Get stats
+        id: stats
+        run: |
+          COUNT=$(python -c "import json; d=json.load(open('data/callsigns.json')); print(len(d['assignments']))")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Create dated release
+        run: |
+          gh release create "v${{ steps.stats.outputs.date }}" data/callsigns.json \
+            --title "MCMC Callsigns - ${{ steps.stats.outputs.date }}" \
+            --notes "**Total records:** ${{ steps.stats.outputs.count }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update latest release
+        run: |
+          gh release delete latest --yes || true
+          gh release create latest data/callsigns.json \
+            --title "Latest MCMC Callsigns" \
+            --notes "**Total records:** ${{ steps.stats.outputs.count }}
+          **Updated:** ${{ steps.stats.outputs.date }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

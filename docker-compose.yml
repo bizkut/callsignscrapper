@@ -1,0 +1,45 @@
+services:
+  # One-time scraper run
+  scraper:
+    build: .
+    container_name: mcmc-scraper
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Usage:
+    # docker compose run --rm scraper python scraper.py           # Incremental
+    # docker compose run --rm scraper python scraper.py --fresh   # Fresh scrape  
+    # docker compose run --rm scraper python scraper.py --resume  # Resume from checkpoint
+
+    # Scheduled scraper with retry logic
+  scraper-scheduled:
+    build: .
+    container_name: mcmc-scraper-scheduled
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        echo "Scheduled scraper started. Will run daily at 2 AM."
+        while true; do
+          current_hour=$$(date +%H)
+          current_minute=$$(date +%M)
+          
+          if [ "$$current_hour" = "02" ] && [ "$$current_minute" = "00" ]; then
+            echo "Starting scheduled scrape at $$(date)"
+            
+            # Try with resume in case of interruption
+            python scraper.py --resume || python scraper.py --resume
+            
+            echo "Scrape completed at $$(date)"
+            sleep 3600
+          else
+            sleep 60
+          fi
+        done
+    profiles:
+      - scheduled
+    restart: unless-stopped
