@@ -213,7 +213,7 @@
         <div class="api-docs">
             <h3>📡 API Usage</h3>
             <p>Fetch the JSON directly:</p>
-            <pre><code>fetch('https://github.com/YOUR_USERNAME/YOUR_REPO/releases/download/latest/callsigns.json')
+            <pre><code>fetch('https://github.com/bizkut/callsignscrapper/releases/download/latest/callsigns.json')
   .then(r => r.json())
   .then(data => console.log(data.assignments))</code></pre>
             <p>Or use the JavaScript API:</p>
@@ -229,9 +229,12 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
     </div>
 
     <script>
-        // Configuration - UPDATE THIS with your GitHub repo
+        // Configuration
         const REPO = 'bizkut/callsignscrapper';
-        const DATA_URL = `https://github.com/${REPO}/releases/download/latest/callsigns.json`;
+        // Local file (works on GitHub Pages)
+        const DATA_URL = './callsigns.json';
+        // Fallback: GitHub release
+        const DATA_URL_FALLBACK = `https://github.com/${REPO}/releases/download/latest/callsigns.json`;
 
         let callsignData = null;
 
@@ -239,8 +242,17 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
         window.CallsignAPI = {
             async load() {
                 if (callsignData) return callsignData;
-                const res = await fetch(DATA_URL);
-                callsignData = await res.json();
+                try {
+                    // Try jsDelivr first (CORS-friendly)
+                    const res = await fetch(DATA_URL);
+                    if (!res.ok) throw new Error('Primary fetch failed');
+                    callsignData = await res.json();
+                } catch (e) {
+                    // Fallback to direct GitHub release
+                    console.log('Trying fallback URL...');
+                    const res = await fetch(DATA_URL_FALLBACK);
+                    callsignData = await res.json();
+                }
                 return callsignData;
             },
             async getAll() {

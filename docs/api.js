@@ -10,9 +10,12 @@
  */
 
 (function (global) {
-    // UPDATE THIS with your GitHub repo
+    // Configuration
     const REPO = 'bizkut/callsignscrapper';
-    const DATA_URL = `https://github.com/${REPO}/releases/download/latest/callsigns.json`;
+    // Local file (works on GitHub Pages)
+    const DATA_URL = './callsigns.json';
+    // Fallback: GitHub release
+    const DATA_URL_FALLBACK = `https://github.com/${REPO}/releases/download/latest/callsigns.json`;
 
     let cache = null;
 
@@ -23,9 +26,18 @@
          */
         async load() {
             if (cache) return cache;
-            const res = await fetch(DATA_URL);
-            if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-            cache = await res.json();
+            try {
+                // Try jsDelivr first (CORS-friendly)
+                const res = await fetch(DATA_URL);
+                if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+                cache = await res.json();
+            } catch (e) {
+                // Fallback to direct GitHub release
+                console.log('Trying fallback URL...');
+                const res = await fetch(DATA_URL_FALLBACK);
+                if (!res.ok) throw new Error(`Fallback failed: ${res.status}`);
+                cache = await res.json();
+            }
             return cache;
         },
 
