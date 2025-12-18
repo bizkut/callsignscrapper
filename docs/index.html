@@ -187,6 +187,10 @@
                 <div class="stat-label">Total Records</div>
             </div>
             <div class="stat">
+                <div class="stat-value" id="showing">-</div>
+                <div class="stat-label">Showing</div>
+            </div>
+            <div class="stat">
                 <div class="stat-value" id="updated">-</div>
                 <div class="stat-label">Last Updated</div>
             </div>
@@ -282,7 +286,7 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
                 const data = await CallsignAPI.load();
                 document.getElementById('total').textContent = data.assignments.length.toLocaleString();
                 document.getElementById('updated').textContent = data.metadata?.last_updated?.split('T')[0] || 'Unknown';
-                renderResults(data.assignments.slice(0, 50));
+                renderResults(data.assignments.slice(0, 50), data.assignments.length);
             } catch (e) {
                 document.getElementById('results').innerHTML =
                     `<tr><td colspan="4" class="loading">Failed to load data. Check console.</td></tr>`;
@@ -290,8 +294,12 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
             }
         }
 
-        function renderResults(items) {
+        function renderResults(items, total) {
             const tbody = document.getElementById('results');
+            const showingEl = document.getElementById('showing');
+
+            showingEl.textContent = total !== undefined ? total.toLocaleString() : items.length.toLocaleString();
+
             if (!items.length) {
                 tbody.innerHTML = '<tr><td colspan="4" class="loading">No results found</td></tr>';
                 return;
@@ -313,10 +321,10 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
                 const q = e.target.value.trim();
                 if (!q) {
                     const data = await CallsignAPI.load();
-                    renderResults(data.assignments.slice(0, 50));
+                    renderResults(data.assignments.slice(0, 50), data.assignments.length);
                 } else {
                     const results = await CallsignAPI.search(q);
-                    renderResults(results.slice(0, 100));
+                    renderResults(results.slice(0, 100), results.length);
                 }
             }, 300);
         });
