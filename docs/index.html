@@ -157,6 +157,41 @@
             color: #888;
         }
 
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pagination button {
+            background: rgba(0, 217, 255, 0.2);
+            border: 1px solid #00d9ff;
+            color: #00d9ff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: rgba(0, 217, 255, 0.4);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
 
             th,
@@ -212,6 +247,11 @@
                     </tr>
                 </tbody>
             </table>
+            <div class="pagination" id="pagination" style="display: none;">
+                <button id="prevBtn" onclick="prevPage()">← Previous</button>
+                <span class="page-info" id="pageInfo">Page 1 of 1</span>
+                <button id="nextBtn" onclick="nextPage()">Next →</button>
+            </div>
         </div>
 
         <div class="api-docs">
@@ -280,13 +320,20 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
             }
         };
 
+        // Pagination state
+        const PAGE_SIZE = 50;
+        let currentPage = 1;
+        let currentResults = [];
+
         // UI
         async function init() {
             try {
                 const data = await CallsignAPI.load();
                 document.getElementById('total').textContent = data.assignments.length.toLocaleString();
                 document.getElementById('updated').textContent = data.metadata?.last_updated?.split('T')[0] || 'Unknown';
-                renderResults(data.assignments.slice(0, 50), data.assignments.length);
+                currentResults = data.assignments;
+                currentPage = 1;
+                renderPage();
             } catch (e) {
                 document.getElementById('results').innerHTML =
                     `<tr><td colspan="4" class="loading">Failed to load data. Check console.</td></tr>`;
@@ -294,17 +341,36 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
             }
         }
 
-        function renderResults(items, total) {
+        function renderPage() {
             const tbody = document.getElementById('results');
             const showingEl = document.getElementById('showing');
+            const paginationEl = document.getElementById('pagination');
+            const pageInfoEl = document.getElementById('pageInfo');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
 
-            showingEl.textContent = total !== undefined ? total.toLocaleString() : items.length.toLocaleString();
+            const totalPages = Math.ceil(currentResults.length / PAGE_SIZE);
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const pageItems = currentResults.slice(start, end);
 
-            if (!items.length) {
+            showingEl.textContent = currentResults.length.toLocaleString();
+
+            // Show/hide pagination
+            if (totalPages > 1) {
+                paginationEl.style.display = 'flex';
+                pageInfoEl.textContent = `Page ${currentPage} of ${totalPages}`;
+                prevBtn.disabled = currentPage === 1;
+                nextBtn.disabled = currentPage === totalPages;
+            } else {
+                paginationEl.style.display = 'none';
+            }
+
+            if (!pageItems.length) {
                 tbody.innerHTML = '<tr><td colspan="4" class="loading">No results found</td></tr>';
                 return;
             }
-            tbody.innerHTML = items.map(a => `
+            tbody.innerHTML = pageItems.map(a => `
                 <tr>
                     <td class="callsign">${a.call_sign}</td>
                     <td>${a.assignment_holder}</td>
@@ -314,6 +380,23 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
             `).join('');
         }
 
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPage();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(currentResults.length / PAGE_SIZE);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPage();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
         let debounce;
         document.getElementById('search').addEventListener('input', (e) => {
             clearTimeout(debounce);
@@ -321,11 +404,12 @@ const holder = await CallsignAPI.getByCallsign('9M2ABC');</code></pre>
                 const q = e.target.value.trim();
                 if (!q) {
                     const data = await CallsignAPI.load();
-                    renderResults(data.assignments.slice(0, 50), data.assignments.length);
+                    currentResults = data.assignments;
                 } else {
-                    const results = await CallsignAPI.search(q);
-                    renderResults(results.slice(0, 100), results.length);
+                    currentResults = await CallsignAPI.search(q);
                 }
+                currentPage = 1;
+                renderPage();
             }, 300);
         });
 
