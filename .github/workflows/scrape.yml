@@ -18,9 +18,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Playwright
+      - name: Install dependencies
         run: |
-          pip install playwright
+          pip install -r requirements.txt
           playwright install chromium
 
       - name: Download previous data
@@ -32,7 +32,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run scraper
-        run: python scraper.py
+        run: |
+          python scraper.py
+          # Verify data was created
+          test -f data/callsigns.json || (echo "ERROR: callsigns.json not created!" && exit 1)
 
       - name: Get stats
         id: stats
