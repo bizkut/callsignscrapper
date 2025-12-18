@@ -242,7 +242,6 @@ async def scrape_with_session(playwright, start_page, session_id, total_added, t
         page_num = start_page
         pages_in_session = 0
         max_pages = 1000
-        consecutive_no_new = 0  # Track pages with no new records
         
         while page_num <= max_pages:
             pages_in_session += 1
@@ -292,15 +291,6 @@ async def scrape_with_session(playwright, start_page, session_id, total_added, t
             
             print(f"Page {page_num}: {len(page_assignments)} records ({added} new, {updated} updated)")
             print(f"  Running total: {total_records} scraped, {get_assignment_count()} in DB")
-            
-            # Duplicate detection - stop if no new records for 10 consecutive pages
-            if added == 0:
-                consecutive_no_new += 1
-                if consecutive_no_new >= 10:
-                    print(f"\nNo new records for {consecutive_no_new} consecutive pages, stopping.")
-                    break
-            else:
-                consecutive_no_new = 0  # Reset counter
             
             # Update session progress
             update_scrape_session(session_id, total_records, total_added, total_updated, page_num)

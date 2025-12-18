@@ -4,10 +4,10 @@
       "id": 1,
       "started_at": "2025-12-18T03:06:30.611393",
       "status": "running",
-      "records_found": 1500,
-      "records_added": 1500,
-      "records_updated": 0,
-      "last_page": 100
+      "records_found": 9750,
+      "records_added": 930,
+      "records_updated": 285,
+      "last_page": 650
     },
     {
       "id": 2,
@@ -21,11 +21,31 @@
     {
       "id": 3,
       "started_at": "2025-12-18T03:29:05.600686",
+      "status": "completed",
+      "records_found": 8788,
+      "records_added": 8638,
+      "records_updated": 150,
+      "last_page": 586,
+      "completed_at": "2025-12-18T04:12:56.942118"
+    },
+    {
+      "id": 4,
+      "started_at": "2025-12-18T05:06:35.990624",
+      "status": "completed",
+      "records_found": 750,
+      "records_added": 0,
+      "records_updated": 750,
+      "last_page": 50,
+      "completed_at": "2025-12-18T05:09:43.984306"
+    },
+    {
+      "id": 5,
+      "started_at": "2025-12-18T05:12:30.713053",
       "status": "running",
-      "records_found": 5788,
-      "records_added": 5788,
-      "records_updated": 0,
-      "last_page": 386
+      "records_found": 210,
+      "records_added": 0,
+      "records_updated": 210,
+      "last_page": 14
     }
   ]
 }
