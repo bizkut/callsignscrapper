@@ -43,6 +43,7 @@ jobs:
 
       - name: Create dated release
         run: |
+          gh release delete "v${{ steps.stats.outputs.date }}" --yes || true
           gh release create "v${{ steps.stats.outputs.date }}" data/callsigns.json \
             --title "MCMC Callsigns - ${{ steps.stats.outputs.date }}" \
             --notes "**Total records:** ${{ steps.stats.outputs.count }}"
