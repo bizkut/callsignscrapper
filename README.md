@@ -2,20 +2,25 @@
 
 Scrapes Malaysian amateur radio callsigns from MCMC and provides a JavaScript API.
 
-## Quick Start (Local)
+## Quick Start
+
+```bash
+# Run scraper and upload to GitHub releases
+./run.sh
+```
+
+Or manually:
 
 ```bash
 docker compose build
 docker compose run --rm scraper python scraper.py
 ```
 
-## GitHub Actions (Automated Weekly)
+## Setup
 
-Runs every Sunday at 2 AM UTC, uploads to GitHub Releases.
-
-1. Push to GitHub
-2. Enable Actions write permissions in Settings
-3. Enable GitHub Pages from `docs/` folder
+1. Clone repo and install Docker
+2. Run `./run.sh` to scrape + upload
+3. Enable GitHub Pages (Settings → Pages → `main`, `/docs`)
 
 ## JavaScript API
 
@@ -39,9 +44,6 @@ const all9M2 = await CallsignAPI.getByPrefix('9M2');
 
 // Get all data
 const all = await CallsignAPI.getAll();
-
-// Get total count
-const count = await CallsignAPI.getCount();
 ```
 
 ## Files
@@ -51,11 +53,11 @@ const count = await CallsignAPI.getCount();
 | `data/callsigns.json` | All callsign assignments |
 | `docs/index.html` | Search UI (GitHub Pages) |
 | `docs/api.js` | JavaScript API |
+| `run.sh` | Scrape + upload to releases |
 
 ## Features
 
 - Auto-resume if interrupted
 - Anti-detection delays
-- Duplicate detection
-- Weekly GitHub Actions automation
+- Incremental updates (only adds new records)
 - JavaScript API for web apps
