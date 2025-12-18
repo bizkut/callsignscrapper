@@ -119,6 +119,72 @@ async def extract_table_data(page):
     return table_data
 
 
+async def get_last_page_info(page):
+    """Navigate to last page by clicking ... button and get total pages and records."""
+    print("Finding last page...")
+    # Keep clicking ... until we reach the last pagination section
+    while True:
+        clicked = await page.evaluate("""
+            () => {
+                const links = document.querySelectorAll('a');
+                for (const link of links) {
+                    if (link.textContent.trim() === '...') {
+                        link.click();
+                        return true;
+                    }
+                }
+                return false;
+            }
+        """)
+        if not clicked:
+            break
+        await page.wait_for_load_state("networkidle")
+        await asyncio.sleep(0.5)  # Fast clicking
+    
+    # Get the last page number from pagination
+    last_page = await page.evaluate("""
+        () => {
+            const links = document.querySelectorAll('a');
+            let maxPage = 1;
+            for (const link of links) {
+                const num = parseInt(link.textContent.trim());
+                if (!isNaN(num) && num > maxPage) {
+                    maxPage = num;
+                }
+            }
+            return maxPage;
+        }
+    """)
+    
+    # Get total records from the last page
+    await page.evaluate("""
+        () => {
+            const links = document.querySelectorAll('a');
+            let maxPage = 1;
+            let maxLink = null;
+            for (const link of links) {
+                const num = parseInt(link.textContent.trim());
+                if (!isNaN(num) && num > maxPage) {
+                    maxPage = num;
+                    maxLink = link;
+                }
+            }
+            if (maxLink) maxLink.click();
+        }
+    """)
+    await page.wait_for_load_state("networkidle")
+    await asyncio.sleep(2)
+    
+    # Count records on last page
+    table_data = await extract_table_data(page)
+    last_page_records = len(table_data)
+    
+    # Calculate total records: (last_page - 1) * 15 + last_page_records
+    total_records = (last_page - 1) * 15 + last_page_records
+    
+    return last_page, total_records
+
+
 async def click_next_page(page):
     """Click next page link if available. Returns True if successful."""
     result = await page.evaluate("""
@@ -329,10 +395,12 @@ async def scrape_all(fresh=False, resume=False):
     total_added = 0
     total_updated = 0
     total_records = 0
+    our_count = get_assignment_count()
     
     if fresh:
         clear_assignments()
         session_id = start_scrape_session()
+        our_count = 0
     else:
         # Auto-resume from checkpoint if exists (--resume flag is now optional)
         checkpoint = get_checkpoint()
@@ -344,6 +412,47 @@ async def scrape_all(fresh=False, resume=False):
             session_id = start_scrape_session()
     
     async with async_playwright() as p:
+        # First, check the last page to see if we need to scrape
+        if not fresh and start_page == 1 and our_count > 0:
+            browser, context = await create_stealth_context(p)
+            try:
+                page = await context.new_page()
+                url = f"{BASE_URL}?type={APPARATUS_TYPE}"
+                print(f"Checking for updates at {url}...")
+                await page.goto(url, wait_until="networkidle", timeout=60000)
+                await asyncio.sleep(2)
+                
+                # Click Search button
+                await page.evaluate("""
+                    () => {
+                        const btn = document.querySelector("input[value='Search']");
+                        if (btn) btn.click();
+                    }
+                """)
+                await page.wait_for_load_state("networkidle")
+                await asyncio.sleep(2)
+                
+                # Get last page info
+                last_page, website_total = await get_last_page_info(page)
+                print(f"Website has {website_total} records across {last_page} pages")
+                print(f"We have {our_count} records")
+                
+                if website_total <= our_count:
+                    print("No new records to scrape!")
+                    complete_scrape_session(session_id, 0, 0, 0, 0, "no_updates")
+                    await context.close()
+                    await browser.close()
+                    return
+                
+                # Calculate where new records start
+                new_records = website_total - our_count
+                start_page = max(1, last_page - (new_records // 15) - 5)  # Start a bit earlier to be safe
+                print(f"Found {new_records} new records, starting from page {start_page}")
+                
+            finally:
+                await context.close()
+                await browser.close()
+        
         current_page = start_page
         status = "running"
         

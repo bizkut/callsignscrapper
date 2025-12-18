@@ -4,10 +4,10 @@
       "id": 1,
       "started_at": "2025-12-18T03:06:30.611393",
       "status": "running",
-      "records_found": 9750,
-      "records_added": 930,
-      "records_updated": 285,
-      "last_page": 650
+      "records_found": 11182,
+      "records_added": 2138,
+      "records_updated": 509,
+      "last_page": 759
     },
     {
       "id": 2,
@@ -46,6 +46,15 @@
       "records_added": 0,
       "records_updated": 210,
       "last_page": 14
+    },
+    {
+      "id": 6,
+      "started_at": "2025-12-18T05:49:06.645261",
+      "status": "running",
+      "records_found": 45,
+      "records_added": 0,
+      "records_updated": 45,
+      "last_page": 3
     }
   ]
 }
